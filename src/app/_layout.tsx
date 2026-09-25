@@ -2,6 +2,7 @@ import { Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { View, ActivityIndicator } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 export default function RootLayout() {
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
@@ -37,5 +38,10 @@ export default function RootLayout() {
     );
   }
 
-  return <Slot />;
+  return (
+    <>
+      <Slot />
+      <Toast />
+    </>
+  );
 }

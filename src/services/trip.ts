@@ -3,7 +3,7 @@ import { Trip, TripCreate, TripUpdate } from '../types';
 
 export const tripService = {
   getTrips: async (): Promise<Trip[]> => {
-    const response = await api.get<Trip[]>('/trips');
+    const response = await api.get<Trip[]>('/trips/');
     return response.data;
   },
 
@@ -13,7 +13,7 @@ export const tripService = {
   },
 
   createTrip: async (tripData: TripCreate): Promise<Trip> => {
-    const response = await api.post<Trip>('/trips', tripData);
+    const response = await api.post<Trip>('/trips/', tripData);
     return response.data;
   },
 

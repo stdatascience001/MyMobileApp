@@ -1,9 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, StatusBar, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, StatusBar, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useState, useCallback } from 'react';
 import { tripService } from '../../services/trip';
 import { Trip } from '../../types';
+
+import Toast from 'react-native-toast-message';
 
 export default function TripDetailsScreen() {
   const { id } = useLocalSearchParams();
@@ -11,6 +13,7 @@ export default function TripDetailsScreen() {
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -22,7 +25,7 @@ export default function TripDetailsScreen() {
           }
         } catch (error) {
           console.error("Error fetching trip:", error);
-          Alert.alert("Error", "Could not load trip details.");
+          Toast.show({ type: 'error', text1: 'Error', text2: 'Could not load trip details.' });
         } finally {
           setLoading(false);
         }
@@ -32,27 +35,20 @@ export default function TripDetailsScreen() {
   );
 
   const handleDelete = () => {
-    Alert.alert(
-      "Delete Trip",
-      "Are you sure you want to delete this trip?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              if (id) {
-                await tripService.deleteTrip(id as string);
-                router.replace('/home');
-              }
-            } catch (err) {
-              Alert.alert("Error", "Could not delete trip");
-            }
-          }
-        }
-      ]
-    );
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    setDeleteModalVisible(false);
+    try {
+      if (id) {
+        await tripService.deleteTrip(id as string);
+        Toast.show({ type: 'success', text1: 'Success', text2: 'Trip deleted successfully.' });
+        router.replace('/home');
+      }
+    } catch (err) {
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Could not delete trip' });
+    }
   };
 
   if (loading) {
@@ -110,6 +106,37 @@ export default function TripDetailsScreen() {
         </TouchableOpacity>
 
       </ScrollView>
+
+      {/* Custom Delete Confirmation Modal */}
+      <Modal
+        visible={isDeleteModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Trip</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to delete this trip? This action cannot be undone.</Text>
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalCancelButton]} 
+                onPress={() => setDeleteModalVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalConfirmButton]} 
+                onPress={confirmDelete}
+              >
+                <Text style={styles.modalConfirmText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -246,5 +273,65 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#4b5563',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalCancelButton: {
+    backgroundColor: '#f3f4f6',
+  },
+  modalConfirmButton: {
+    backgroundColor: '#ef4444',
+  },
+  modalCancelText: {
+    color: '#4b5563',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalConfirmText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   }
 });
